@@ -17,10 +17,13 @@ app.get('/location', (request, response) => {
 });
 
 app.get('/weather', (request, response) => {
-  const searchQuery = request.query.data;
   const weatherData = require('./data/darksky.json');
-  const weather = new Weather(request.query.data, weatherData);
-  response.send(weather);
+  let result = [];
+  weatherData.daily.data.forEach((day) => {
+    let weather = new Weather(request.query.data, day.summary, day.time);
+    result.push(weather);
+  });
+  response.send(result);
 });
 
 function Location(query, geoData) {
@@ -30,11 +33,18 @@ function Location(query, geoData) {
   this.longitude = geoData.results[0].geometry.location.lat;
 }
 
-function Weather(weatherData) {
-  this.forecast = weatherData.currently.summary;
-  let convertedTime = new Date().getTime(weatherData.currently.time);
+function Weather(query, dataSummary, dataTime) {
+  // this.searchQuery = query;
+  this.forecast = dataSummary;
+  let convertedTime = new Date().getTime(dataTime);
   let date = new Date(convertedTime);
   this.time = date.toString();
+  // times.forEach((item) => {
+  //   this.forecast = item.summary;
+  //   let convertedTime = new Date().getTime(item.time);
+  //   let date = new Date(convertedTime);
+  //   this.time = date.toString();
+  // });
 }
 
 app.listen(PORT, () => {

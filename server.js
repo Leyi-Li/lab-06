@@ -34,17 +34,8 @@ function Location(query, geoData) {
 }
 
 function Weather(query, dataSummary, dataTime) {
-  // this.searchQuery = query;
   this.forecast = dataSummary;
-  let convertedTime = new Date().getTime(dataTime);
-  let date = new Date(convertedTime);
-  this.time = date.toString();
-  // times.forEach((item) => {
-  //   this.forecast = item.summary;
-  //   let convertedTime = new Date().getTime(item.time);
-  //   let date = new Date(convertedTime);
-  //   this.time = date.toString();
-  // });
+  this.time = new Date(dataTime).toDateString();
 }
 
 app.listen(PORT, () => {

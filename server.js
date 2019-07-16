@@ -12,18 +12,22 @@ app.get('/location', (request, response) => {
     const location = new Location(request.query.data, geoData);
     response.send(location);
   } catch (error) {
-    response.status(400).send({ 'error': error});
+    response.status(500).send('responseText: "Sorry, something went wrong"');
   }
 });
 
 app.get('/weather', (request, response) => {
-  const weatherData = require('./data/darksky.json');
-  let result = [];
-  weatherData.daily.data.forEach((day) => {
-    let weather = new Weather(request.query.data, day.summary, day.time);
-    result.push(weather);
-  });
-  response.send(result);
+  try {
+    const weatherData = require('./data/darksky.json');
+    let result = [];
+    weatherData.daily.data.forEach((day) => {
+      let weather = new Weather(request.query.data, day.summary, day.time);
+      result.push(weather);
+    });
+    response.send(result);
+  } catch(error){
+    response.status(500).send('responseText: "Sorry, something went wrong"');
+  }
 });
 
 function Location(query, geoData) {

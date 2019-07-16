@@ -19,7 +19,7 @@ app.get('/location', (request, response) => {
 app.get('/weather', (request, response) => {
   const searchQuery = request.query.data;
   const weatherData = require('./data/darksky.json');
-  const weather = `${searchQuery} weather data goes here`
+  const weather = new Weather(request.query.data, weatherData);
   response.send(weather);
 });
 
@@ -28,6 +28,13 @@ function Location(query, geoData) {
   this.formatted_query = geoData.results[0].formatted_address;
   this.latitude = geoData.results[0].geometry.location.lat;
   this.longitude = geoData.results[0].geometry.location.lat;
+}
+
+function Weather(weatherData) {
+  this.forecast = weatherData.currently.summary;
+  let convertedTime = new Date().getTime(weatherData.currently.time);
+  let date = new Date(convertedTime);
+  this.time = date.toString();
 }
 
 app.listen(PORT, () => {

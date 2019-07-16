@@ -12,7 +12,7 @@ app.get('/location', (request, response) => {
     const location = new Location(request.query.data, geoData);
     response.send(location);
   } catch (error) {
-    response.status(500).send('responseText: "Sorry, something went wrong"');
+    response.status(500).send('status:500. responseText: "Sorry, something went wrong"');
   }
 });
 
@@ -26,7 +26,7 @@ app.get('/weather', (request, response) => {
     });
     response.send(result);
   } catch(error){
-    response.status(500).send('responseText: "Sorry, something went wrong"');
+    response.status(500).send('status:500. responseText: "Sorry, something went wrong"');
   }
 });
 

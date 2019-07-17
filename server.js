@@ -1,38 +1,49 @@
 'use strict';
 
+require('dotenv').config();
+
 const express = require('express');
+const cors = require('cors');
+const superagent = require('superagent');
+
+
 const app = express();
 const PORT = process.env.PORT || 3000;
-// const cors = require('cors');
 
-// app.use(cors());
-app.get('/location', (request, response) => {
-  try {
-    const geoData = require('./data/geo.json');
-    const location = new Location(request.query.data, geoData);
-    response.send(location);
-  } catch (error) {
-    response.status(500).send('status:500. responseText: "Sorry, something went wrong"');
-  }
-});
+app.use(cors());
 
-app.get('/weather', (request, response) => {
-  try {
-    const weatherData = require('./data/darksky.json');
-    const weatherList = weatherData.daily.data.map(day=>{
-      return new Weather(day);
+app.get('/location',searchToLatLong);
+// app.get('/weather',getWeather);
+
+function searchToLatLong(request,response){
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${request.query.data}&key=${process.env.GEOCODE_API_KEY}`;
+  return superagent.get(url)
+    .then(res=>{
+      const location = new Location(request.query.data, JSON.parse(res.text));
+      response.send(location);
     })
-    response.send(weatherList);
-  } catch(error){
-    response.status(500).send('status:500. responseText: "Sorry, something went wrong"');
-  }
-});
+    .catch(err =>{
+      response.send(err);
+    });
+}
 
-function Location(query, geoData) {
+// app.get('/weather', (request, response) => {
+//   try {
+//     const weatherData = require('./data/darksky.json');
+//     const weatherList = weatherData.daily.data.map(day=>{
+//       return new Weather(day);
+//     })
+//     response.send(weatherList);
+//   } catch(error){
+//     response.status(500).send('status:500. responseText: "Sorry, something went wrong"');
+//   }
+// });
+
+function Location(query, res) {
   this.search_query = query;
-  this.formatted_query = geoData.results[0].formatted_address;
-  this.latitude = geoData.results[0].geometry.location.lat;
-  this.longitude = geoData.results[0].geometry.location.lat;
+  this.formatted_query = res.results[0].formatted_address;
+  this.latitude = res.results[0].geometry.location.lat;
+  this.longitude = res.results[0].geometry.location.lng;
 }
 
 function Weather(day) {

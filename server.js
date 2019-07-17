@@ -44,11 +44,18 @@ function getWeather(request,response){
 }
 
 function getEvent(request,response){
-  const url = `https://www.eventbriteapi.com/v3/${process.env.EVENTBRITE_API_KEY}/${request.query.data}`;
+  const url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${request.query.data.formatted_query}`;
 
   return.superagent.get(url)
     .then(res=>{
-      const evenList = res.
+      const evenList = res.body.events.map(eventData=>{
+        const event = new Event(eventData);
+        return event;
+      });
+      response.send(events);
+    })
+    .catch(err=>{
+      response.send(err);
     })
 }
 
@@ -63,6 +70,13 @@ function Location(query, res) {
 function Weather(day) {
   this.forecast = day.summary;
   this.time = new Date(day.time * 1000).toDateString().slice(0,15);
+}
+
+function getEvent(event){
+  this.link = event.url;
+  this.name=event.name.text;
+  this.event_date = new Date(event.start.local).toString().slice(0,15);
+  this.summary = event.summar;
 }
 
 app.listen(PORT, () => {

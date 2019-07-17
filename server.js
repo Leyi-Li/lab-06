@@ -13,7 +13,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 
 app.get('/location',searchToLatLong);
-// app.get('/weather',getWeather);
+app.get('/weather',getWeather);
+app.get('/eventbrite',getEvent);
 
 function searchToLatLong(request,response){
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${request.query.data}&key=${process.env.GEOCODE_API_KEY}`;
@@ -27,17 +28,30 @@ function searchToLatLong(request,response){
     });
 }
 
-// app.get('/weather', (request, response) => {
-//   try {
-//     const weatherData = require('./data/darksky.json');
-//     const weatherList = weatherData.daily.data.map(day=>{
-//       return new Weather(day);
-//     })
-//     response.send(weatherList);
-//   } catch(error){
-//     response.status(500).send('status:500. responseText: "Sorry, something went wrong"');
-//   }
-// });
+function getWeather(request,response){
+  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
+
+  return superagent.get(url)
+    .then(res=>{
+      const weatherList = res.body.daily.data.map(day =>{
+        return new Weather(day);
+      })
+      response.send(weatherList);
+    })
+    .catch(err=>{
+      response.send(err)
+    });
+}
+
+function getEvent(request,response){
+  const url = `https://www.eventbriteapi.com/v3/${process.env.EVENTBRITE_API_KEY}/${request.query.data}`;
+
+  return.superagent.get(url)
+    .then(res=>{
+      const evenList = res.
+    })
+}
+
 
 function Location(query, res) {
   this.search_query = query;

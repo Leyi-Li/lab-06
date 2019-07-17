@@ -19,12 +19,10 @@ app.get('/location', (request, response) => {
 app.get('/weather', (request, response) => {
   try {
     const weatherData = require('./data/darksky.json');
-    let result = [];
-    weatherData.daily.data.forEach((day) => {
-      let weather = new Weather(request.query.data, day.summary, day.time);
-      result.push(weather);
-    });
-    response.send(result);
+    const weatherList = weatherData.daily.data.map(day=>{
+      return new Weather(day);
+    })
+    response.send(weatherList);
   } catch(error){
     response.status(500).send('status:500. responseText: "Sorry, something went wrong"');
   }
@@ -37,9 +35,9 @@ function Location(query, geoData) {
   this.longitude = geoData.results[0].geometry.location.lat;
 }
 
-function Weather(query, dataSummary, dataTime) {
-  this.forecast = dataSummary;
-  this.time = new Date(dataTime).toDateString();
+function Weather(day) {
+  this.forecast = day.summary;
+  this.time = new Date(day.time * 1000).toDateString().slice(0,15);
 }
 
 app.listen(PORT, () => {

@@ -17,8 +17,28 @@ client.on('err',err=>console.log(err));
 app.use(cors());
 
 app.get('/location',getLocation);
-// app.get('/weather',getWeather);
+app.get('/weather',getWeather);
 // app.get('/events',getEvent);
+
+
+function handleError(err,res){
+  if(res){
+    res.status(500).send('Sorry, something went wrong');
+  }
+}
+
+function lookup(tableName, rowId,hit,miss) {
+  const SQL =`SELECT * FROM ${tableName} WHERE ${rowId}`;
+  client.query(SQL,[rowId])
+    .then(result =>{
+      if(result.rowCount>0){
+        hit(result);
+      }else{
+        miss();
+      }
+    })
+    .catch(error=>handleError(error));
+}
 
 //location functions
 
@@ -37,6 +57,8 @@ function getLocation(request,response){
   };
   Location.lookupLocation(locationHnadler);
 }
+
+
 
 function Location(query, res) {
   this.search_query = query;
@@ -73,6 +95,7 @@ Location.fetchLocation=(query)=>{
     });
 }
 
+
 Location.lookupLocation=(handler)=>{
   const SQL =`SELECT * FROM locations WHERE search_query=$1`;
   const values = [handler.query];
@@ -91,25 +114,52 @@ Location.lookupLocation=(handler)=>{
 
 //weather section
 
+function getWeather(request,response){
+  const handler = {
+    location: request.query.data,
+    cacheHit: function(result){
+      response.send(result.rows);
+    },
+    cacheMiss: function(){
+      Weather.fetch(request.query.data)
+        .then(results=>response.send(results))
+        .catch(console.error);
+    }
+  };
+  Weather.lookUpWeather('weathers',location.id,handler.cacheHit,handler.cacheMiss);
+}
+
+Weather.lookUpWeather = lookup;
+
 function Weather(day) {
   this.forecast = day.summary;
   this.time = new Date(day.time * 1000).toDateString().slice(0,15);
 }
 
-function getWeather(request,response){
+Weather.prototype.save = function(id){
+  const SQL = `INSERT INTO weathers(forecast, time, location_id) VALUES($1,$2,$3);`;
+  const values = Object.values(this);
+  values.push(id);
+  client.query(SQL,values);
+}
+
+Weather.fetch = function(location){
   const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
 
   return superagent.get(url)
-    .then(res=>{
-      const weatherList = res.body.daily.data.map(day =>{
-        return new Weather(day);
+    .then(result=>{
+      const weatherSummaries = result.body.daily.data.map(day =>{
+        const summary = new Weather(day);
+        summary.save(location.id);
+        return summary;
       })
-      response.send(weatherList);
+      return weatherSummaries;
     })
-    .catch(err=>{
-      response.send(err)
-    });
 }
+
+
+
+//event
 
 function getEvent(request,response){
   const url = `https://www.eventbriteapi.com/v3/events/search?location.longitude=${request.query.data.longitude}&location.latitude=${request.query.data.latitude}&token=${process.env.EVENTBRITE_API_KEY}`;
@@ -130,6 +180,7 @@ function getEvent(request,response){
     })
 }
 
+Event.lookUpEvent = lookup;
 
 function Event(event){
   this.link = event.url;

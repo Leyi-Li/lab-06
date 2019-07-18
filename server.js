@@ -14,7 +14,7 @@ app.use(cors());
 
 app.get('/location',searchToLatLong);
 app.get('/weather',getWeather);
-app.get('/eventbrite',getEvent);
+app.get('/events',getEvent);
 
 function searchToLatLong(request,response){
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${request.query.data}&key=${process.env.GEOCODE_API_KEY}`;
@@ -44,14 +44,17 @@ function getWeather(request,response){
 }
 
 function getEvent(request,response){
-  const url = `https://www.eventbriteapi.com/v3/events/search?token=${process.env.EVENTBRITE_API_KEY}&location.address=${request.query.data.formatted_query}`;
+  const url = `https://www.eventbriteapi.com/v3/events/search?location.longitude=${request.query.data.longitude}&location.latitude=${request.query.data.latitude}&token=${process.env.EVENTBRITE_API_KEY}`;
 
-  return.superagent.get(url)
+  console.log(url);
+  return superagent.get(url)
     .then(res=>{
-      const evenList = res.body.events.map(eventData=>{
+      console.log('got in');
+      const events = res.body.events.map(eventData=>{
         const event = new Event(eventData);
         return event;
       });
+      console.log(events);
       response.send(events);
     })
     .catch(err=>{
@@ -72,11 +75,11 @@ function Weather(day) {
   this.time = new Date(day.time * 1000).toDateString().slice(0,15);
 }
 
-function getEvent(event){
+function Event(event){
   this.link = event.url;
   this.name=event.name.text;
-  this.event_date = new Date(event.start.local).toString().slice(0,15);
-  this.summary = event.summar;
+  // this.event_date = new Date(event.start.local).toString().slice(0,15);
+  this.summary = event.summary;
 }
 
 app.listen(PORT, () => {

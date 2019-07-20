@@ -27,18 +27,6 @@ function handleError(err,res){
   }
 }
 
-function lookup(tableName, rowId,hit,miss) {
-  const SQL =`SELECT * FROM ${tableName} WHERE ${rowId}`;
-  client.query(SQL,[rowId])
-    .then(result =>{
-      if(result.rowCount>0){
-        hit(result);
-      }else{
-        miss();
-      }
-    })
-    .catch(error=>handleError(error));
-}
 
 //location functions
 
@@ -52,7 +40,9 @@ function getLocation(request,response){
 
     cacheMiss: ()=>{
       Location.fetchLocation(request.query.data)
-        .then(data=>response.send(data));
+        .then(data=> {
+          console.log(data);
+          response.send(data)});
     },
   };
   Location.lookupLocation(locationHnadler);
@@ -90,7 +80,7 @@ Location.fetchLocation=(query)=>{
             location.id = result.rows[0].id;
             return location;
           });
-        return location;
+        // return location;
       }
     });
 }
@@ -112,6 +102,22 @@ Location.lookupLocation=(handler)=>{
 
 };
 
+//lookup function for other parts except location  
+
+function lookup(tableName, rowId,hit,miss) {
+  const SQL =`SELECT * FROM ${tableName} WHERE location_id = ${rowId}`;
+  client.query(SQL)
+    .then(result =>{
+      if(result.rowCount>0){
+        hit(result);
+      }
+      // else{
+      //   miss();
+      // }
+    })
+    .catch(miss());
+}
+
 //weather section
 
 function getWeather(request,response){
@@ -126,10 +132,10 @@ function getWeather(request,response){
         .catch(console.error);
     }
   };
-  Weather.lookUpWeather('weathers',location.id,handler.cacheHit,handler.cacheMiss);
+  lookup('weathers',handler.location.id,handler.cacheHit,handler.cacheMiss);
 }
 
-Weather.lookUpWeather = lookup;
+
 
 function Weather(day) {
   this.forecast = day.summary;
@@ -144,7 +150,8 @@ Weather.prototype.save = function(id){
 }
 
 Weather.fetch = function(location){
-  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
+  console.log('got in fetch');
+  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${location.latitude},${location.longitude}`;
 
   return superagent.get(url)
     .then(result=>{

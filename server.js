@@ -28,6 +28,21 @@ function handleError(err,res){
 }
 
 
+function lookup(tableName, rowId,hit,miss) {
+  const SQL =`SELECT * FROM ${tableName} WHERE id = $1`;
+  console.log(rowId);
+  client.query(SQL, [rowId])
+    .then(result =>{
+      if(result.rowCount>0){
+        hit(result);
+      }else{
+        miss();
+      }
+    })
+    .catch(error=>handleError(error));
+}
+
+
 //location functions
 
 function getLocation(request,response){
@@ -67,7 +82,7 @@ Location.prototype.save = function() {
   let values = Object.values(this);
   return client.query(SQL,values);
 };
-  
+
 Location.fetchLocation=(query)=>{
   const _URL = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
   return superagent.get(_URL)
@@ -89,7 +104,7 @@ Location.fetchLocation=(query)=>{
 Location.lookupLocation=(handler)=>{
   const SQL =`SELECT * FROM locations WHERE search_query=$1`;
   const values = [handler.query];
-
+  console.log(values);
   return client.query(SQL, values)
     .then( results=>{
       if(results.rowCount > 0){
@@ -133,9 +148,8 @@ function getWeather(request,response){
     }
   };
   lookup('weathers',handler.location.id,handler.cacheHit,handler.cacheMiss);
+
 }
-
-
 
 function Weather(day) {
   this.forecast = day.summary;
@@ -143,13 +157,17 @@ function Weather(day) {
 }
 
 Weather.prototype.save = function(id){
+  console.log('Saving weather');
   const SQL = `INSERT INTO weathers(forecast, time, location_id) VALUES($1,$2,$3);`;
-  const values = Object.values(this);
+  const values = [this.forecast,this.time];
   values.push(id);
+  console.log('this is the pushed id values',values,id);
   client.query(SQL,values);
+  console.log(SQL);
 }
 
 Weather.fetch = function(location){
+
   console.log('got in fetch');
   const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${location.latitude},${location.longitude}`;
 
@@ -168,33 +186,33 @@ Weather.fetch = function(location){
 
 //event
 
-function getEvent(request,response){
-  const url = `https://www.eventbriteapi.com/v3/events/search?location.longitude=${request.query.data.longitude}&location.latitude=${request.query.data.latitude}&token=${process.env.EVENTBRITE_API_KEY}`;
+// function getEvent(request,response){
+//   const url = `https://www.eventbriteapi.com/v3/events/search?location.longitude=${request.query.data.longitude}&location.latitude=${request.query.data.latitude}&token=${process.env.EVENTBRITE_API_KEY}`;
 
-  console.log(url);
-  return superagent.get(url)
-    .then(res=>{
-      console.log('got in');
-      const events = res.body.events.map(eventData=>{
-        const event = new Event(eventData);
-        return event;
-      });
-      console.log(events);
-      response.send(events);
-    })
-    .catch(err=>{
-      response.send(err);
-    })
-}
+//   console.log(url);
+//   return superagent.get(url)
+//     .then(res=>{
+//       console.log('got in');
+//       const events = res.body.events.map(eventData=>{
+//         const event = new Event(eventData);
+//         return event;
+//       });
+//       console.log(events);
+//       response.send(events);
+//     })
+//     .catch(err=>{
+//       response.send(err);
+//     })
+// }
 
-Event.lookUpEvent = lookup;
+// Event.lookUpEvent = lookup;
 
-function Event(event){
-  this.link = event.url;
-  this.name=event.name.text;
-  // this.event_date = new Date(event.start.local).toString().slice(0,15);
-  this.summary = event.summary;
-}
+// function Event(event){
+//   this.link = event.url;
+//   this.name=event.name.text;
+//   // this.event_date = new Date(event.start.local).toString().slice(0,15);
+//   this.summary = event.summary;
+// }
 
 app.listen(PORT, () => {
   console.log('Listening on port: ' + PORT);

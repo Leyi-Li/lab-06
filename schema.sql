@@ -27,3 +27,19 @@ CREATE TABLE events(
     location_id INTERGER NOT NULL,
     FOREIGN KEY (location_id) REFERENCES location(id)
 );
+
+CREATE TABLE movies(
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255),
+    overview TEXT,
+    average_votes FLOAT,
+    total_votes INTEGER NOT NULL,
+    image_url TEXT,
+    popularity FLOAT,
+    release_on TEXT
+);
+
+CREATE TABLE trails(
+    id SERIAL PRIMARY KEY,
+    
+);
